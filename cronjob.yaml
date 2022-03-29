@@ -1,0 +1,61 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: db-backup-cronjob
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: db-backup-maker
+            image: 445805446819.dkr.ecr.us-east-2.amazonaws.com/aws-cli-ubuntu:latest
+            env:
+              - name: S3_BUCKET
+                value: "s3://bucketname/subfolder/"
+              - name: PGHOST
+                value: "localhost"
+              - name: PGPORT
+                value: "5432"
+              - name: PREFIX
+                value: "demoapp"
+              - name: AWS_DEFAULT_REGION
+                value: "us-east-2"
+              - name: PGUSER
+                valueFrom:
+                  secretKeyRef:
+                    name: secrets
+                    key: PGUSER
+              - name: PGPASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: secrets
+                    key: PGPASSWORD
+              - name: BACKUP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: secrets
+                    key: BACKUP_PASSWORD
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: secrets
+                    key: AWS_ACCESS_KEY_ID
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: secrets
+                    key: AWS_SECRET_ACCESS_KEY
+              - name: SLACK_WEBHOOK
+                valueFrom:
+                  secretKeyRef:
+                    name: secrets
+                    key: SLACK_WEBHOOK
+            imagePullPolicy: Always
+            args:
+            - /bin/bash
+            - -c
+            - backup.sh
+          restartPolicy: OnFailure
+      backoffLimit: 3
